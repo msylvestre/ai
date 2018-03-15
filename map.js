@@ -201,9 +201,7 @@ function trainNetwork(trainingSet) {
 
   trainer.train(trainingSet, option);
 
-  let testSet = trainingSet; //[{input:"Item Description", output:"Product Description"}];
-
-  console.log(trainer.test(testSet, option));
+  console.log(trainer.test(trainingSet, option));
 
   // teach the network two different patterns
   //hopfield.learn([
