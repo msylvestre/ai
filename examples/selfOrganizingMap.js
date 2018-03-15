@@ -39,74 +39,71 @@ angular.module('gitHubApp')
         }
       }
     }
-
+    
 
 
     var feed = function(word){
 
-      console.log("input word: " + word);
-    
-        var input = ascii2bin(word);
-    
-        console.log("output word in binary: " + input.join(''));
-    
-        var output = hopfield.feed(input);
-    
-        var key = output.join('');
+      var input = ascii2bin(word);
+      var output = hopfield.feed(input);
+      var key = output.join('');
 
-    if (key in $scope.map)
-    {
-            console.log("Key in scope");
-      $scope.map[key].push(word);
-    } else {
-      var learn = [];
-      $scope.map[key] = [word];
-
-      for (var i in $scope.map)
-      {
-        learn.push(i.split(''));
-      }
-
-      var set = [];
-      for (var p in learn) {
-
-                //console.log("learn[p] : " + learn[p]);
-                set.push({
-                  input: learn[p],
-                  output: learn[p]
-                });   
-            }
+      if (key in $scope.map) {
         
+        console.log("Key in scope");
+        $scope.map[key].push(word);
+      
+      } 
+      else {
 
-      doTrain(set);
-    }
-    console.log("output patn in binary: " + key);
+        var learn = [];
+        $scope.map[key] = [word];
 
-    preview();
-    }
+        for (var i in $scope.map)
+        {
+          learn.push(i.split(''));
+        }
 
-    var ascii2bin = function(ascii)
-    {
-      var bin = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
-      for (var i = 0; i < ascii.length; i++)
-      {
-        var code = ascii.charCodeAt(i);
-        bin += ('00000000' + code.toString(2)).slice(-8);
+        var set = [];
+        for (var p in learn) {
+
+                  //console.log("learn[p] : " + learn[p]);
+                  set.push({
+                    input: learn[p],
+                    output: learn[p]
+                  });   
+              }
+          
+
+        doTrain(set);
       }
-      return bin.slice(-10 * 8).split('').reverse();
-    }
+      console.log("output patn in binary: " + key);
 
-    var bin2dec = function(bin){
-      return parseInt(bin.join(''), 2);
-    }
+      preview();
+      }
 
-    var doTrain = function(set){
-        console.log("training"); 
-      trainer.train(set, {
-      iterations: 10000,
-      error: .5,
-      rate: .05
-    });
+      var ascii2bin = function(ascii)
+      {
+        var bin = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+        for (var i = 0; i < ascii.length; i++)
+        {
+          var code = ascii.charCodeAt(i);
+          bin += ('00000000' + code.toString(2)).slice(-8);
+        }
+        return bin.slice(-10 * 8).split('').reverse();
+      }
+
+      var bin2dec = function(bin){
+        return parseInt(bin.join(''), 2);
+      }
+
+      var doTrain = function(set){
+          console.log("training"); 
+        trainer.train(set, {
+        iterations: 10000,
+        error: .5,
+        rate: .05
+      });
     }
 
     $scope.map[ascii2bin("cat").join('')] = ["cat"];
@@ -125,19 +122,19 @@ angular.module('gitHubApp')
       output: answer[p]
     });
 
-  doTrain(set);
+    doTrain(set);
 
-  var preview = function(){
-    var draw = []
-    for (var i in $scope.map)
-    {
-      var row = draw.push([]) - 1;
-      for (var j in $scope.map[i])
-        draw[row].push($scope.map[i][j]);
+    var preview = function(){
+      var draw = []
+      for (var i in $scope.map)
+      {
+        var row = draw.push([]) - 1;
+        for (var j in $scope.map[i])
+          draw[row].push($scope.map[i][j]);
+      }
+      $scope.draw = draw;
     }
-    $scope.draw = draw;
-  }
 
-  preview();
+    preview();
 
   });

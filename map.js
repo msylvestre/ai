@@ -1,13 +1,18 @@
-var synaptic = require('synaptic');
+let synaptic    = require('synaptic');
 
-var Architect = synaptic.Architect;
-var Trainer = synaptic.Trainer;
+let Architect   = synaptic.Architect;
+let Trainer     = synaptic.Trainer;
 
-var hopfield = new Architect.Hopfield(80);
-var trainer = new Trainer(hopfield);
+let hopfield    = new Architect.Hopfield(80);
+let trainer     = new Trainer(hopfield);
 
 
-var ascii2bin = function(ascii)
+
+/////////////////////////////////////////////
+// Helper
+/////////////////////////////////////////////
+
+function ascii2bin(ascii)
 {
   var bin = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
   for (var i = 0; i < ascii.length; i++)
@@ -18,66 +23,194 @@ var ascii2bin = function(ascii)
   return bin.slice(-10 * 8).split('').reverse();
 }
 
+function convertToBin(trainingSet) {
 
+  let binTrainingSet = [];
 
-var trainingSet = [
-  {
-    input: ascii2bin("john"),
-    output: ascii2bin("john")
-  },
-  {
-    input: ascii2bin("Marco"),
-    output: ascii2bin("john")
-  },
-  {
-    input: ascii2bin("product-title"),
-    output: ascii2bin("product")
-  },
-  {
-    input: ascii2bin("product-description"),
-    output: ascii2bin("product")
+  for (var i = 0; i < trainingSet.length; i++) {
+    binTrainingSet[i] = {
+                          input: ascii2bin(trainingSet[i].input),
+                          output: ascii2bin(trainingSet[i].output)
+                        }
   }
-]
+
+  return binTrainingSet;
+}
 
 
-function main() {
+
+/////////////////////////////////////////////
+// Trainer
+/////////////////////////////////////////////
+
+function readTrainingSet() {
+
+  let trainingSet = [
+    {
+      input: "john",
+      output: "john"
+    },
+    {
+      input: "Marco",
+      output: "john"
+    },
+    {
+      input: "Johnny",
+      output: "john"
+    },
+    {
+      input: "Product Title",
+      output: "Product Name"
+    },
+    {
+      input: "Item Title",
+      output: "Product Name"
+    },
+    {
+      input: "Name of Product",
+      output: "Product Name"
+    },
+    {
+      input: "Product Description",
+      output: "Product Description"
+    },
+    {
+      input: "Item Description",
+      output: "Product Description"
+    },
+    {
+      input: "Description",
+      output: "Product Description"
+    },
+
+  ];
+
+  return trainingSet;
+
+}
+
+
+function trainNetwork(trainingSet) {
 
   var option = {
-    iterations: 20000,
-    error: .05,
+    iterations: 50000,
+    error: .5,
     rate: .05
   };
 
-  console.log("Training Neo....");
   trainer.train(trainingSet, option);
-  console.log("Neo is done training !")
 
-  var input = ascii2bin("product title");
+  // teach the network two different patterns
+  //hopfield.learn([
+  //  [0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+  //  [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+  //]);
 
-  //console.log("output word in binary: " + input.join(''));
+}
 
-  var output = hopfield.feed(input);
 
-  console.log(output);
-  var key = output.join('');
+function buildDictionnary(trainingSet, binTrainingSet) {
 
-  var myMap = {};
+  let dictionnary = {};
 
-  myBin = ascii2bin("production");
-  myBin = myBin.join('')
+  for (item in trainingSet) {
 
-  console.log("input  : " + myBin);
-  console.log("output : " + key);
+    console.log('item : ' + JSON.stringify(trainingSet[item].input));
+    dictionnary[binTrainingSet[item].input.join('')] = [trainingSet[item].input];
 
-  myMap[myBin] = ["product"];
+  }
 
-  if (key in myMap) {
-    console.log("pattern matched");
+  return dictionnary;
+}
+
+
+function readCSVHeader(filename) {
+
+  let csvHeader = ['Name of product'];
+
+  return csvHeader;
+
+}
+
+function crunchData(csvHeader) {
+
+  let proposedMapping = [];
+
+  console.log('DEBUG >>>> ' + csvHeader[0]);
+
+  let input   = ascii2bin(csvHeader[0]);
+  let output  = hopfield.feed(input);
+  
+  proposedMapping.push(output.join(''));
+
+  return proposedMapping;
+
+}
+
+function main() {
+
+  let cmdLineArgs = [];
+
+  process.argv.forEach(function (val, index, array) {
+    
+    if (index > 1) {
+
+      console.log(index + ': ' + val);
+      cmdLineArgs.push(val);  
+    }
+    
+  });
+
+  let csvfile = './csvfile.csv';
+
+  console.log("\n>> Read Training set...")
+  let trainingSet = readTrainingSet();
+
+  console.log("\n>> Convert to binary...");
+  let binTrainingSet = convertToBin(trainingSet);
+
+  console.log("\n>> Build Dictionnary...");
+  let dictionnary = buildDictionnary(trainingSet, binTrainingSet);
+
+  console.log("\n>> Training AI...");
+  trainNetwork(binTrainingSet);
+  console.log(">> Neo is done training !")
+
+  console.log('\n>> Read CSV file header...');
+  csvHeader = readCSVHeader(csvfile);
+
+  console.log('DEBUG 2 >>>> ' + csvHeader[0])
+  let data = csvHeader;
+
+  if (cmdLineArgs.length > 0) {
+    data = [cmdLineArgs[0]];
+  }
+  
+  console.log('\n>> Crunching data...');
+  let proposedMapping = crunchData(data);
+
+  var key = proposedMapping[0];
+
+
+  console.log('\n>> Mapping proposed by AI:');
+
+  console.log('- Input attribute    : ' + data);  
+  console.log('- Input Binary       : ' + ascii2bin(data[0]).join(''));
+  console.log('- Output Binary      : ' + proposedMapping);
+
+  if (key in dictionnary) {
+    console.log('- Proposed Mapping   : ' + dictionnary[proposedMapping] + '\n');
   }
   else {
-    console.log("New Pattern");
+    console.log("\nNo proposal, sorry.  Neo still need to learn ;-)");
+    console.log(key + "\n");
   }
 
 }
 
+
+
 main();
+
+
+
