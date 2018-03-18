@@ -9,6 +9,7 @@
   "author": "msylvestre",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.6.0",
     "synaptic": "^1.1.4"
   }
 }

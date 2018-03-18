@@ -131,7 +131,7 @@ function buildTrainingSet() {
 
     // Save / Print only the mapped field
     if (mappedField !== 'null') {
-      console.log('templateField : ' + templateField + '\t\t --> ' + mappedField);  
+      //console.log('templateField : ' + templateField + '\t\t --> ' + mappedField);  
       trainingSet.push({input: mappedField, output: templateField});
     }
   }
@@ -195,7 +195,7 @@ function trainNetwork(trainingSet) {
 
   var option = {
     iterations: 100000,
-    error: .05,  // Seems to reduce the error result when you compare to trainer.test.  At .03 it seems the for taks too long and should use async
+    error: .04,  // Seems to reduce the error result when you compare to trainer.test.  At .03 it seems the for taks too long and should use async
     rate: .1
   };
 
@@ -213,6 +213,9 @@ function trainNetwork(trainingSet) {
 
 
 function buildDictionnary(trainingSet, binTrainingSet) {
+
+  //console.log('trainingSet');
+  //console.log(trainingSet);
 
   let dictionnary = {};
 
@@ -316,8 +319,125 @@ function main() {
 }
 
 
+function main2() {
 
-main();
+  async = require('async');
+
+
+  async.auto({
+    
+    foo: function (next) { next(null, 'foo'); },
+    
+
+    bar: function (next) { next(null, 'man'); },
+    
+
+    buildMyTrainingSet: function (cb) {
+
+      console.log("\n>> Build Training set...")
+      //let trainingSet = readTrainingSet();
+      let trainingSet = buildTrainingSet();
+      
+      cb(null, trainingSet);      
+    },
+
+    convert2Bin: ['buildMyTrainingSet', function (result, cb) {
+
+      console.log("\n>> Convert to binary...");
+      //console.log(result);
+      let trainingSet = result.buildMyTrainingSet;
+      let binTrainingSet = convertToBin(result.buildMyTrainingSet);
+
+      let response = {
+        trainingSet: trainingSet,
+        binTrainingSet: binTrainingSet
+      };
+
+      cb(null, response);
+
+    }],
+
+    buildMyDictionnary: ['convert2Bin', function (result, cb) {
+
+      console.log("\n>> Build Dictionnary...");
+      let dictionnary = buildDictionnary(result.convert2Bin.trainingSet, result.convert2Bin.binTrainingSet);
+
+      let response = {
+        binTrainingSet: result.convert2Bin.binTrainingSet,
+        dictionnary: dictionnary
+      }
+
+      cb(null, response);
+
+    }],
+
+    trainNeo: ['buildMyDictionnary', function (result, cb) {
+
+      //console.log(result);
+
+      console.log("\n>> Training AI...");
+      trainNetwork(result.buildMyDictionnary.binTrainingSet);
+      console.log(">> Neo is done training !")
+
+      cb(null, "SUCCESS");
+
+    }],
+
+    readCSVHeader: ['trainNeo', function(result, cb) {
+      
+      let csvfile = './csvfile.csv';
+
+      console.log('\n>> Read CSV file header...');
+      csvHeader = readCSVHeader(csvfile);
+
+      cb(null, csvHeader);
+
+    }],
+
+    crunchData: ['readCSVHeader', function (result, cb) {
+
+      console.log('\n>> Crunching data...');
+
+      console.log(result.readCSVHeader);
+
+      let proposedMapping = crunchData(result.readCSVHeader);
+
+      var key = proposedMapping[0];
+
+      cb(null, key);
+
+    }]
+/*
+    run: ['buildMyTrainingSet', function(result, next) {
+      next(null, result.buildMyTrainingSet);
+    }],
+
+    wat: ['foo', 'bar', function (result, cb) {
+      //console.log(result);
+      cb(null, result.foo + result.bar);
+    }]
+*/
+  }, (err, results)=> {
+
+    if (err) {
+      console.log('ERROR : ' + err);
+    }
+
+    //const { tx, details } = results.wat;
+    let test = results.buildMyDictionnary.dictionnary;
+    console.log(test);
+
+    //const loadedTrainingSet = results.run;
+    //console.log(loadedTrainingSet.buildMyTrainingSet);
+
+  });
+
+
+}
+
+
+
+main2();
 
 //let trainingSet = buildTrainingSet();
 
